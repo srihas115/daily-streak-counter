@@ -143,8 +143,8 @@ export default function CheckInButton({
       <button
         type="button"
         className="gear-btn"
-        aria-label="Settings"
-        onClick={() => setSettingsOpen(true)}
+        aria-label={settingsOpen ? "Close settings" : "Settings"}
+        onClick={() => setSettingsOpen((open) => !open)}
       >
         ⚙
       </button>
