@@ -1,146 +1,100 @@
-# daily-streak-counter
+# daily-streak-counter (Next.js + Supabase + Vercel)
 
 A tiny, self-hosted streak tracker you can embed in Notion. Visit a URL like
 `/morning` or `/night`, tap the checkmark once a day, and it tracks your
 current streak, your longest streak, and your next milestone. Each path is
 its own independent counter — no login, no settings, nothing fancy.
 
-This app runs as a single **Cloudflare Worker** (a small script that runs on
-Cloudflare's servers) and stores data in **Workers KV** (a simple free
-key-value database). Both are free for personal use at this scale.
+> This is the Next.js/Supabase/Vercel version of the app. There's also a
+> Cloudflare Workers version on the `main` branch, if you'd rather use that
+> stack instead.
 
-The instructions below assume you've never used a terminal for this kind of
-thing before. Follow the numbered steps in order.
+This app is a **Next.js 15** app that stores data in **Supabase** (a free
+hosted Postgres database) and deploys to **Vercel** (free hosting for
+Next.js apps).
 
-## 1. Install Node.js (if you don't have it)
+## 1. Create a free Supabase project
 
-Node.js is the JavaScript runtime the deploy tool needs to run on your
-computer — you won't write any Node code yourself.
+1. Go to [supabase.com](https://supabase.com) and sign up (free tier, no
+   credit card required).
+2. Click **New project**, give it any name, pick a region close to you, and
+   set a database password (you won't need to remember it — Supabase
+   manages the connection for you).
+3. Once the project is ready, open the **SQL Editor** in the left sidebar.
+4. Paste the contents of [supabase/schema.sql](supabase/schema.sql) and run
+   it. This creates the `streaks` table used to store your counters.
+5. Go to **Project Settings → API**. You'll need two values from this page
+   in step 3 below:
+   - **Project URL** (looks like `https://xxxxx.supabase.co`)
+   - **service_role key** (under "Project API keys" — click to reveal it).
+     This key has full database access, so never put it in frontend code or
+     commit it to git — it's only used server-side in this app.
 
-1. Open a terminal (Terminal.app on Mac, or Command Prompt/PowerShell on
-   Windows).
-2. Check if you already have it:
-   ```
-   node -v
-   ```
-   If you see something like `v18.18.0` or higher, skip to step 2.
-3. If you get a "command not found" error, download and install Node.js from
-   [nodejs.org](https://nodejs.org) — pick the "LTS" version, run the
-   installer, then restart your terminal and re-run `node -v` to confirm.
+## 2. Install dependencies and run locally (optional, to test first)
 
-## 2. Create a free Cloudflare account
+1. Install [Node.js](https://nodejs.org) (LTS version) if you don't have
+   it — check with `node -v`.
+2. In this project folder:
+   ```
+   npm install
+   ```
+3. Copy the example env file and fill in your Supabase values from step 1.5:
+   ```
+   cp .env.example .env.local
+   ```
+   Edit `.env.local` and paste in your `SUPABASE_URL` and
+   `SUPABASE_SERVICE_ROLE_KEY`.
+4. Run the dev server:
+   ```
+   npm run dev
+   ```
+5. Visit `http://localhost:3000/morning` — you should see a `0`, a check-in
+   button, "Next goal", and "Longest streak".
 
-Cloudflare is the company whose servers will host this app for free.
+## 3. Deploy to Vercel
 
-1. Go to [dash.cloudflare.com/sign-up](https://dash.cloudflare.com/sign-up)
-   and create a free account (email + password is enough — no credit card
-   required for this).
+1. Go to [vercel.com](https://vercel.com) and sign up free (you can sign up
+   with your GitHub account).
+2. Click **Add New → Project**, and import this GitHub repository
+   (`daily-streak-counter`), selecting the `nextjs-supabase-vercel` branch.
+3. In the **Environment Variables** section of the import screen, add:
+   - `SUPABASE_URL` = your Project URL from step 1.5
+   - `SUPABASE_SERVICE_ROLE_KEY` = your service_role key from step 1.5
+4. Click **Deploy**. After a minute or two, Vercel gives you a live URL like
+   `https://daily-streak-counter-yourname.vercel.app`.
 
-## 3. Install Wrangler and log in
+## 4. Test it in a browser
 
-Wrangler is Cloudflare's command-line tool for deploying Workers.
+Visit `https://daily-streak-counter-yourname.vercel.app/morning`. Tap the
+check-in button — confirm the number animates and the button grays out to
+"Done for today". Reload to confirm it stays checked in.
 
-1. In your terminal, navigate to this project folder, e.g.:
-   ```
-   cd path/to/daily-streak-counter
-   ```
-2. Install Wrangler:
-   ```
-   npm install -g wrangler
-   ```
-3. Log in to your Cloudflare account (this opens a browser window to
-   authorize):
-   ```
-   wrangler login
-   ```
-   Click "Allow" in the browser tab that opens, then return to your
-   terminal.
+## 5. Embed in Notion
 
-## 4. Create the KV namespace
+1. On any Notion page, type `/embed`, press Enter.
+2. Paste your full streak URL, e.g.
+   `https://daily-streak-counter-yourname.vercel.app/morning`.
+3. Resize the embed block by dragging its edges.
 
-A "namespace" here just means a labeled storage bucket for this app's data.
+## 6. Add a second, separate streak
 
-1. Run:
-   ```
-   wrangler kv namespace create STREAKS
-   ```
-2. Wrangler will print something like:
-   ```
-   { binding = "STREAKS", id = "abcd1234ef567890" }
-   ```
-3. Open `wrangler.toml` in this folder in any text editor. Find this line:
-   ```
-   { binding = "STREAKS", id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID" }
-   ```
-4. Replace `REPLACE_WITH_YOUR_KV_NAMESPACE_ID` with the `id` value Wrangler
-   printed (keep the quotes), then save the file.
-
-## 5. Deploy
-
-1. Run:
-   ```
-   wrangler deploy
-   ```
-2. When it finishes, you'll see output ending with a URL, something like:
-   ```
-   https://daily-streak-counter.YOUR-SUBDOMAIN.workers.dev
-   ```
-   That's your app's base URL. Save it somewhere — you'll use it in the next
-   steps.
-
-## 6. Test it in a browser
-
-1. Open your base URL in a browser and add a streak name to the end, e.g.:
-   ```
-   https://daily-streak-counter.YOUR-SUBDOMAIN.workers.dev/morning
-   ```
-2. You should see a big `0`, a "Check in ✓" button, and text for "Next goal"
-   and "Longest streak". Tap the button — the number should animate to `1`
-   and the button should gray out to "Done for today".
-3. Reload the page — it should still show `1` and stay disabled (it only
-   allows one check-in per day, in the America/Chicago timezone).
-
-## 7. Embed it in Notion
-
-1. In any Notion page, type `/embed` and select the **Embed** block type.
-2. Paste your streak's full URL, including the path, e.g.:
-   ```
-   https://daily-streak-counter.YOUR-SUBDOMAIN.workers.dev/morning
-   ```
-3. Press Enter/"Embed link". Notion will render the page inside your
-   document.
-4. Drag the corner/edge handles of the embed block to resize it to a
-   comfortable size — the page is designed to look fine both narrow (mobile)
-   and wide (desktop).
-
-## 8. Add a second, separate streak (e.g. "night")
-
-No redeploy needed — every path is automatically its own independent
-counter.
-
-1. Repeat step 7, but use a different path, e.g.:
-   ```
-   https://daily-streak-counter.YOUR-SUBDOMAIN.workers.dev/night
-   ```
-2. This creates a brand-new streak with its own count, completely unrelated
-   to `/morning`. Repeat for as many streaks as you want (`/reading`,
-   `/gym`, etc.).
+No redeploy needed — every path is its own row in the `streaks` table,
+created automatically the first time you check in. Just embed a different
+path, e.g. `/night`, `/gym`, `/reading`.
 
 ## Troubleshooting
 
-- **Deploy fails or data doesn't seem to save** — double check the `id` in
-  `wrangler.toml` under `kv_namespaces` exactly matches the `id` Wrangler
-  printed in step 4. A typo here is the most common issue.
-- **"Not logged in" or authorization errors when running `wrangler deploy`**
-  — run `wrangler login` again (step 3) and make sure you clicked "Allow" in
-  the browser tab.
-- **Notion embed shows blank / won't load** — make sure you're pasting the
-  full `https://...workers.dev/yourstreakname` URL (not just the bare
-  domain), and that you tested it directly in a browser first (step 6). If
-  the browser tab shows the page fine but Notion doesn't, try removing and
-  re-adding the embed block.
+- **Blank page / 500 error on Vercel** — almost always missing or wrong
+  environment variables. Go to your Vercel project → Settings →
+  Environment Variables and double check `SUPABASE_URL` and
+  `SUPABASE_SERVICE_ROLE_KEY` are set exactly as shown in Supabase's API
+  settings page, then redeploy.
+- **"Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY" error locally** —
+  you forgot to create `.env.local` (step 2.3), or it's missing a value.
+- **Notion embed shows blank** — test the URL directly in a browser first
+  (step 4). If that works but Notion doesn't, remove and re-add the embed
+  block.
 - **Streak resets when you didn't expect it to** — the app resets your
   streak to 0 if a full calendar day (America/Chicago time) passes with no
-  check-in. If you check in very late at night or very early in the
-  morning, the "day" boundary is midnight Central Time, not your local
+  check-in. The "day" boundary is midnight Central Time, not your local
   time.
