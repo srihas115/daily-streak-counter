@@ -75,9 +75,9 @@ export default function CheckInButton({
   const rangeLabel = longestRangeLabel(longest, longestStartDate, longestEndDate, longestOngoing);
 
   return (
-    <div className="wrap">
+    <div className={`wrap${checkedInToday ? " checked-in" : ""}`}>
       <div className="app-header">
-        You are on <span className="app-name">DAILY STREAK COUNTER</span> for{" "}
+        You are on <span className="app-name">Daily Streak Counter</span> for{" "}
         <span className="streak-path">/{slug}</span>
       </div>
       <div className={`count${pop ? " pop" : ""}`}>{count}</div>
