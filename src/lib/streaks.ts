@@ -8,20 +8,29 @@ export type StreakRow = {
   count: number;
   longest: number;
   last_check_date: string | null;
+  longest_start_date: string | null;
+  longest_end_date: string | null;
 };
 
 export function todayInChicago(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: TIMEZONE }).format(new Date());
 }
 
-// Both dates are YYYY-MM-DD strings for the same timezone, so a UTC-midnight
-// diff gives an exact calendar-day difference without DST edge cases.
+// Both dates are YYYY-MM-DD strings for the same timezone, so UTC-midnight
+// math gives exact calendar-day arithmetic without DST edge cases.
 function daysBetween(dateStrA: string, dateStrB: string): number {
   const [ay, am, ad] = dateStrA.split("-").map(Number);
   const [by, bm, bd] = dateStrB.split("-").map(Number);
   const a = Date.UTC(ay, am - 1, ad);
   const b = Date.UTC(by, bm - 1, bd);
   return Math.round((b - a) / 86400000);
+}
+
+function addDays(dateStr: string, delta: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + delta);
+  return dt.toISOString().slice(0, 10);
 }
 
 export function nextMilestone(count: number): number {
@@ -36,7 +45,16 @@ export function nextMilestone(count: number): number {
 async function loadStreak(slug: string): Promise<StreakRow> {
   const supabase = getSupabaseAdmin();
   const { data } = await supabase.from("streaks").select("*").eq("slug", slug).maybeSingle();
-  if (!data) return { slug, count: 0, longest: 0, last_check_date: null };
+  if (!data) {
+    return {
+      slug,
+      count: 0,
+      longest: 0,
+      last_check_date: null,
+      longest_start_date: null,
+      longest_end_date: null,
+    };
+  }
   return data as StreakRow;
 }
 
@@ -73,7 +91,7 @@ export async function resolveStreak(slug: string): Promise<ResolvedStreak> {
     return { data, today, checkedInToday: false };
   }
 
-  // diff > 1: a day was missed, reset the streak.
+  // diff > 1: a day was missed, reset the streak (longest record is untouched).
   if (data.count !== 0) {
     data = { ...data, count: 0 };
     await saveStreak(data);
@@ -81,26 +99,63 @@ export async function resolveStreak(slug: string): Promise<ResolvedStreak> {
   return { data, today, checkedInToday: false };
 }
 
-export type CheckInResult = {
+export type StreakDisplay = {
   count: number;
   longest: number;
   nextMilestone: number;
+  longestStartDate: string | null;
+  longestEndDate: string | null;
+  longestOngoing: boolean;
 };
 
-export async function checkIn(slug: string): Promise<CheckInResult> {
+// While the current run is tied with (or has just extended) the record, the
+// record's "end date" is today, live — it only freezes once that run breaks.
+function toDisplay(data: StreakRow, today: string): StreakDisplay {
+  const longestOngoing = data.longest > 0 && data.count === data.longest;
+  return {
+    count: data.count,
+    longest: data.longest,
+    nextMilestone: nextMilestone(data.count),
+    longestStartDate: data.longest_start_date,
+    longestEndDate: longestOngoing ? today : data.longest_end_date,
+    longestOngoing,
+  };
+}
+
+export async function getStreakDisplay(
+  slug: string
+): Promise<StreakDisplay & { checkedInToday: boolean }> {
+  const { data, today, checkedInToday } = await resolveStreak(slug);
+  return { ...toDisplay(data, today), checkedInToday };
+}
+
+export async function checkIn(slug: string): Promise<StreakDisplay> {
   const { data, today, checkedInToday } = await resolveStreak(slug);
 
   if (checkedInToday) {
-    return { count: data.count, longest: data.longest, nextMilestone: nextMilestone(data.count) };
+    return toDisplay(data, today);
+  }
+
+  const newCount = data.count + 1;
+  let { longest, longest_start_date, longest_end_date } = data;
+
+  // >= (not just >) so a tied run also becomes "the" current record run,
+  // picking up the live end-date behavior above.
+  if (newCount >= longest) {
+    longest = newCount;
+    longest_start_date = addDays(today, -(newCount - 1));
+    longest_end_date = today;
   }
 
   const updated: StreakRow = {
     slug,
-    count: data.count + 1,
-    longest: Math.max(data.longest, data.count + 1),
+    count: newCount,
+    longest,
     last_check_date: today,
+    longest_start_date,
+    longest_end_date,
   };
   await saveStreak(updated);
 
-  return { count: updated.count, longest: updated.longest, nextMilestone: nextMilestone(updated.count) };
+  return toDisplay(updated, today);
 }

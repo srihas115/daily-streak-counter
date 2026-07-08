@@ -34,6 +34,34 @@ body {
   padding: 16px;
 }
 
+.app-header {
+  margin-bottom: 18px;
+  font-size: 12px;
+  color: #888;
+  max-width: 30ch;
+}
+
+.app-name {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #666;
+}
+
+.streak-path {
+  font-weight: 700;
+  color: #666;
+}
+
+@media (prefers-color-scheme: dark) {
+  .app-header {
+    color: #999;
+  }
+  .app-name,
+  .streak-path {
+    color: #ccc;
+  }
+}
+
 .count {
   font-size: clamp(48px, 18vw, 88px);
   font-weight: 700;

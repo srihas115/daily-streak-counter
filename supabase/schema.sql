@@ -2,7 +2,9 @@ create table if not exists streaks (
   slug text primary key,
   count integer not null default 0,
   longest integer not null default 0,
-  last_check_date date
+  last_check_date date,
+  longest_start_date date,
+  longest_end_date date
 );
 
 -- No RLS policies: this table is only ever accessed via the service-role key
