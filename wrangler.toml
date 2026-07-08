@@ -1,0 +1,9 @@
+name = "daily-streak-counter"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# KV namespace binding — after running `wrangler kv namespace create STREAKS`,
+# paste the returned "id" value below (see README step 4).
+kv_namespaces = [
+  { binding = "STREAKS", id = "250966acdb9b4f0da3a0f7c4e47a7bd1" }
+]
