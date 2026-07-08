@@ -16,6 +16,7 @@ export default async function StreakPage({ params }: { params: Promise<{ streak:
       initialLongestEndDate={display.longestEndDate}
       initialLongestOngoing={display.longestOngoing}
       initialCheckedInToday={display.checkedInToday}
+      initialTimezone={display.timezone}
     />
   );
 }

@@ -4,7 +4,8 @@ create table if not exists streaks (
   longest integer not null default 0,
   last_check_date date,
   longest_start_date date,
-  longest_end_date date
+  longest_end_date date,
+  timezone text not null default 'America/Chicago'
 );
 
 -- No RLS policies: this table is only ever accessed via the service-role key

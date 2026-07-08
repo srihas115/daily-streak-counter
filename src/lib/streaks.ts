@@ -1,6 +1,6 @@
 import { getSupabaseAdmin } from "./supabase";
 
-const TIMEZONE = "America/Chicago";
+export const DEFAULT_TIMEZONE = "America/Chicago";
 const FIXED_MILESTONES = [1, 3, 7, 10, 14, 30, 60, 90, 100, 150, 200, 300, 365];
 
 export type StreakRow = {
@@ -10,10 +10,14 @@ export type StreakRow = {
   last_check_date: string | null;
   longest_start_date: string | null;
   longest_end_date: string | null;
+  timezone: string;
 };
 
-export function todayInChicago(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: TIMEZONE }).format(new Date());
+// IANA zone names double as "closest city" labels (America/Chicago,
+// Asia/Kolkata, ...) and already encode each zone's own DST rules, so no
+// separate daylight-saving handling is needed here.
+export function todayInZone(timezone: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(new Date());
 }
 
 // Both dates are YYYY-MM-DD strings for the same timezone, so UTC-midnight
@@ -42,20 +46,23 @@ export function nextMilestone(count: number): number {
   return m;
 }
 
+function defaultRow(slug: string): StreakRow {
+  return {
+    slug,
+    count: 0,
+    longest: 0,
+    last_check_date: null,
+    longest_start_date: null,
+    longest_end_date: null,
+    timezone: DEFAULT_TIMEZONE,
+  };
+}
+
 async function loadStreak(slug: string): Promise<StreakRow> {
   const supabase = getSupabaseAdmin();
   const { data } = await supabase.from("streaks").select("*").eq("slug", slug).maybeSingle();
-  if (!data) {
-    return {
-      slug,
-      count: 0,
-      longest: 0,
-      last_check_date: null,
-      longest_start_date: null,
-      longest_end_date: null,
-    };
-  }
-  return data as StreakRow;
+  if (!data) return defaultRow(slug);
+  return { ...defaultRow(slug), ...data } as StreakRow;
 }
 
 async function saveStreak(row: StreakRow): Promise<void> {
@@ -69,11 +76,12 @@ export type ResolvedStreak = {
   checkedInToday: boolean;
 };
 
-// Resolves the "missed a day" reset against the current date, writing to the
-// DB if a reset is needed. Same logic as check-in, minus the increment.
+// Resolves the "missed a day" reset against the current date (in the
+// streak's own timezone), writing to the DB if a reset is needed. Same
+// logic as check-in, minus the increment.
 export async function resolveStreak(slug: string): Promise<ResolvedStreak> {
-  const today = todayInChicago();
   let data = await loadStreak(slug);
+  const today = todayInZone(data.timezone);
 
   if (!data.last_check_date) {
     return { data, today, checkedInToday: false };
@@ -106,6 +114,7 @@ export type StreakDisplay = {
   longestStartDate: string | null;
   longestEndDate: string | null;
   longestOngoing: boolean;
+  timezone: string;
 };
 
 // While the current run is tied with (or has just extended) the record, the
@@ -119,6 +128,7 @@ function toDisplay(data: StreakRow, today: string): StreakDisplay {
     longestStartDate: data.longest_start_date,
     longestEndDate: longestOngoing ? today : data.longest_end_date,
     longestOngoing,
+    timezone: data.timezone,
   };
 }
 
@@ -148,7 +158,7 @@ export async function checkIn(slug: string): Promise<StreakDisplay> {
   }
 
   const updated: StreakRow = {
-    slug,
+    ...data,
     count: newCount,
     longest,
     last_check_date: today,
@@ -158,4 +168,17 @@ export async function checkIn(slug: string): Promise<StreakDisplay> {
   await saveStreak(updated);
 
   return toDisplay(updated, today);
+}
+
+export async function setTimezone(
+  slug: string,
+  timezone: string
+): Promise<StreakDisplay & { checkedInToday: boolean }> {
+  const data = await loadStreak(slug);
+  await saveStreak({ ...data, timezone });
+  // Re-resolve: the new timezone can shift what "today" is enough to trigger
+  // (or avoid) a missed-day reset, or change whether today is already
+  // checked in, so recompute from scratch rather than patching in memory.
+  const { data: resolved, today, checkedInToday } = await resolveStreak(slug);
+  return { ...toDisplay(resolved, today), checkedInToday };
 }

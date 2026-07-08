@@ -24,6 +24,109 @@ body {
   }
 }
 
+.page {
+  position: relative;
+  min-height: 100%;
+}
+
+.gear-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  margin: 0;
+  padding: 6px 8px;
+  background: transparent;
+  color: #999;
+  font-size: 16px;
+  line-height: 1;
+  border-radius: 6px;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.gear-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #555;
+}
+
+@media (prefers-color-scheme: dark) {
+  .gear-btn {
+    color: #888;
+  }
+  .gear-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ddd;
+  }
+}
+
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 280px;
+}
+
+.back-btn {
+  align-self: flex-start;
+  margin: 0 0 20px 0;
+  padding: 4px 0;
+  background: transparent;
+  color: #666;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 0;
+}
+
+.back-btn:hover {
+  background: transparent;
+  text-decoration: underline;
+}
+
+@media (prefers-color-scheme: dark) {
+  .back-btn {
+    color: #aaa;
+  }
+}
+
+.settings-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 20px 0;
+}
+
+.settings-label {
+  display: block;
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 6px;
+  text-align: left;
+  width: 100%;
+}
+
+@media (prefers-color-scheme: dark) {
+  .settings-label {
+    color: #999;
+  }
+}
+
+#tz-select {
+  width: 100%;
+  font-size: 14px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: #fff;
+  color: #111;
+}
+
+@media (prefers-color-scheme: dark) {
+  #tz-select {
+    border-color: #444;
+    background: #1a1a1a;
+    color: #f2f2f2;
+  }
+}
+
 .wrap {
   min-height: 100%;
   display: flex;
