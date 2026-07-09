@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { StreakDisplay } from "@/lib/streaks";
 import { changePasswordAction, loginAction, setInitialPasswordAction, setSiteDescriptionAction, setThemeAction } from "./actions";
+import Footer from "./Footer";
 
 type Streak = StreakDisplay & { checkedInToday: boolean };
 
@@ -186,6 +187,8 @@ export default function HomeView({ authenticated, passwordSet, siteDescription, 
                 Dark
               </button>
             </div>
+
+            <Footer />
           </div>
         ) : (
           <>
@@ -287,6 +290,8 @@ export default function HomeView({ authenticated, passwordSet, siteDescription, 
                 </table>
               </div>
             ) : null}
+
+            <Footer />
           </>
         )}
       </div>

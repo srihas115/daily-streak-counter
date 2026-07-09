@@ -407,3 +407,25 @@ code {
   font-size: 13px;
   padding: 8px 0;
 }
+
+.footer-links {
+  display: flex;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.footer-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: var(--gear-color);
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.footer-icon:hover {
+  background: var(--gear-hover-bg);
+  color: var(--gear-hover-color);
+}
