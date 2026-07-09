@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
+import { setThemeAction } from "@/app/actions";
 import { checkInAction, loginAndCheckInAction, setDescriptionAction, setTimezoneAction } from "./actions";
 
 type Props = {
@@ -112,6 +114,7 @@ export default function CheckInButton({
   initialTimezone,
   initialDescription,
 }: Props) {
+  const router = useRouter();
   const [count, setCount] = useState(initialCount);
   const [longest, setLongest] = useState(initialLongest);
   const [goal, setGoal] = useState(initialNextMilestone);
@@ -222,6 +225,11 @@ export default function CheckInButton({
     }
   }
 
+  async function handleThemeChange(theme: "light" | "dark" | "system") {
+    await setThemeAction(theme);
+    router.refresh();
+  }
+
   const rangeLabel = longestRangeLabel(longest, longestStartDate, longestEndDate, longestOngoing);
 
   return (
@@ -242,7 +250,7 @@ export default function CheckInButton({
       ) : null}
 
       {settingsOpen && authed ? (
-        <div className="wrap">
+        <div className="wrap page-fade">
           <div className="settings-panel">
             <button type="button" className="back-btn" onClick={() => setSettingsOpen(false)}>
               ← Back
@@ -276,10 +284,25 @@ export default function CheckInButton({
               rows={2}
               placeholder="Short description shown on the home page"
             />
+
+            <label className="settings-label" style={{ marginTop: 16 }}>
+              Theme
+            </label>
+            <div className="theme-buttons">
+              <button type="button" onClick={() => handleThemeChange("system")}>
+                System
+              </button>
+              <button type="button" onClick={() => handleThemeChange("light")}>
+                Light
+              </button>
+              <button type="button" onClick={() => handleThemeChange("dark")}>
+                Dark
+              </button>
+            </div>
           </div>
         </div>
       ) : (
-        <div className={`wrap${checkedInToday ? " checked-in" : ""}`}>
+        <div className={`wrap page-fade${checkedInToday ? " checked-in" : ""}`}>
           <div className="app-header">
             You are on <span className="app-name">Daily Streak Counter</span> for{" "}
             <span className="streak-path">/{slug}</span>

@@ -130,7 +130,7 @@ export default function HomeView({ authenticated, passwordSet, siteDescription, 
 
       <div className="wrap home-wrap">
         {settingsOpen && authenticated ? (
-          <div className="settings-panel">
+          <div className="settings-panel page-fade">
             <button type="button" className="back-btn" onClick={() => setSettingsOpen(false)}>
               ← Back
             </button>
@@ -165,11 +165,12 @@ export default function HomeView({ authenticated, passwordSet, siteDescription, 
             </label>
             <textarea
               id="site-desc"
+              className="no-resize"
               value={descDraft}
               onChange={(e) => setDescDraft(e.target.value)}
               onBlur={handleDescriptionSave}
               disabled={descPending}
-              rows={2}
+              rows={4}
               placeholder="Shown on the home page. Leave empty to hide."
             />
 
@@ -191,7 +192,7 @@ export default function HomeView({ authenticated, passwordSet, siteDescription, 
             <Footer />
           </div>
         ) : (
-          <>
+          <div className="page-fade home-main">
             <h1 className="home-title">Daily Streak Counter</h1>
 
             {!passwordSet ? (
@@ -292,7 +293,7 @@ export default function HomeView({ authenticated, passwordSet, siteDescription, 
             ) : null}
 
             <Footer />
-          </>
+          </div>
         )}
       </div>
     </div>

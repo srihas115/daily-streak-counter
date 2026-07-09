@@ -12,7 +12,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const dataTheme = theme === "dark" || theme === "light" ? theme : undefined;
 
   return (
-    <html lang="en" data-theme={dataTheme}>
+    <html lang="en" data-theme={dataTheme} suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );
