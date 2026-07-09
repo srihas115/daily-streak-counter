@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import "./globals.css";
+import Nav from "./Nav";
 
 export const metadata: Metadata = {
   title: "Daily Streak Counter",
@@ -13,7 +14,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" data-theme={dataTheme} suppressHydrationWarning>
-      <body>{children}</body>
+      <body>
+        <Nav />
+        {children}
+      </body>
     </html>
   );
 }

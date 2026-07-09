@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { setThemeAction } from "@/app/actions";
@@ -234,10 +233,6 @@ export default function CheckInButton({
 
   return (
     <div className="page">
-      <Link href="/" className="home-btn" aria-label="Home">
-        ⌂
-      </Link>
-
       {authed ? (
         <button
           type="button"

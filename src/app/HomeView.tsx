@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { StreakDisplay } from "@/lib/streaks";
 import { changePasswordAction, loginAction, setInitialPasswordAction, setSiteDescriptionAction, setThemeAction } from "./actions";
 import Footer from "./Footer";
+import { GO_HOME_EVENT } from "./Nav";
 
 type Streak = StreakDisplay & { checkedInToday: boolean };
 
@@ -35,6 +36,16 @@ export default function HomeView({ authenticated, passwordSet, siteDescription, 
   const [passwordChangeMsg, setPasswordChangeMsg] = useState<string | null>(null);
   const [descDraft, setDescDraft] = useState(siteDescription);
   const [descPending, setDescPending] = useState(false);
+
+  useEffect(() => {
+    function handleGoHome() {
+      setSettingsOpen(false);
+      setViewerDismissed(false);
+      setLoginOpen(false);
+    }
+    window.addEventListener(GO_HOME_EVENT, handleGoHome);
+    return () => window.removeEventListener(GO_HOME_EVENT, handleGoHome);
+  }, []);
 
   async function handleFirstRunSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -114,9 +125,6 @@ export default function HomeView({ authenticated, passwordSet, siteDescription, 
 
   return (
     <div className="page home-page">
-      <Link href="/" className="home-btn" aria-label="Home">
-        ⌂
-      </Link>
       {authenticated ? (
         <button
           type="button"
