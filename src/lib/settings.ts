@@ -15,7 +15,8 @@ export type AppSettings = {
 
 async function loadRow(): Promise<AppSettingsRow | null> {
   const supabase = getSupabaseAdmin();
-  const { data } = await supabase.from("app_settings").select("*").eq("id", 1).maybeSingle();
+  const { data, error } = await supabase.from("app_settings").select("*").eq("id", 1).maybeSingle();
+  if (error) throw new Error(`Failed to load app settings: ${error.message}`);
   return data as AppSettingsRow | null;
 }
 
@@ -30,7 +31,10 @@ export async function getAppSettings(): Promise<AppSettings> {
 export async function setPassword(newPassword: string): Promise<void> {
   const { hash, salt } = hashPassword(newPassword);
   const supabase = getSupabaseAdmin();
-  await supabase.from("app_settings").upsert({ id: 1, password_hash: hash, password_salt: salt });
+  const { error } = await supabase
+    .from("app_settings")
+    .upsert({ id: 1, password_hash: hash, password_salt: salt });
+  if (error) throw new Error(`Failed to save password: ${error.message}`);
 }
 
 export async function verifyPassword(password: string): Promise<boolean> {
@@ -41,5 +45,6 @@ export async function verifyPassword(password: string): Promise<boolean> {
 
 export async function setSiteDescription(text: string): Promise<void> {
   const supabase = getSupabaseAdmin();
-  await supabase.from("app_settings").upsert({ id: 1, site_description: text });
+  const { error } = await supabase.from("app_settings").upsert({ id: 1, site_description: text });
+  if (error) throw new Error(`Failed to save site description: ${error.message}`);
 }

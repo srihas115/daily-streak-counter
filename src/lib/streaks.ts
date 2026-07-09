@@ -62,14 +62,16 @@ function defaultRow(slug: string): StreakRow {
 
 async function loadStreak(slug: string): Promise<StreakRow> {
   const supabase = getSupabaseAdmin();
-  const { data } = await supabase.from("streaks").select("*").eq("slug", slug).maybeSingle();
+  const { data, error } = await supabase.from("streaks").select("*").eq("slug", slug).maybeSingle();
+  if (error) throw new Error(`Failed to load streak "${slug}": ${error.message}`);
   if (!data) return defaultRow(slug);
   return { ...defaultRow(slug), ...data } as StreakRow;
 }
 
 async function saveStreak(row: StreakRow): Promise<void> {
   const supabase = getSupabaseAdmin();
-  await supabase.from("streaks").upsert(row, { onConflict: "slug" });
+  const { error } = await supabase.from("streaks").upsert(row, { onConflict: "slug" });
+  if (error) throw new Error(`Failed to save streak "${row.slug}": ${error.message}`);
 }
 
 export type ResolvedStreak = {
@@ -151,7 +153,8 @@ export async function getStreakDisplay(
 // would show. N+1 queries is fine at personal-tool scale.
 export async function listAllStreaks(): Promise<Array<StreakDisplay & { checkedInToday: boolean }>> {
   const supabase = getSupabaseAdmin();
-  const { data } = await supabase.from("streaks").select("slug").order("slug", { ascending: true });
+  const { data, error } = await supabase.from("streaks").select("slug").order("slug", { ascending: true });
+  if (error) throw new Error(`Failed to list streaks: ${error.message}`);
   const slugs = (data ?? []).map((row) => row.slug as string);
   return Promise.all(slugs.map((slug) => getStreakDisplay(slug)));
 }
