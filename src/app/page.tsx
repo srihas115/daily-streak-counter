@@ -1,10 +1,21 @@
-export default function Home() {
+import { isAuthenticated } from "@/lib/auth";
+import { getAppSettings } from "@/lib/settings";
+import { listAllStreaks } from "@/lib/streaks";
+import HomeView from "./HomeView";
+
+export default async function Home() {
+  const [authenticated, settings, streaks] = await Promise.all([
+    isAuthenticated(),
+    getAppSettings(),
+    listAllStreaks(),
+  ]);
+
   return (
-    <div className="wrap">
-      <p>
-        Visit <code>/yourstreakname</code> to start a streak, e.g. <code>/morning</code> or{" "}
-        <code>/night</code>.
-      </p>
-    </div>
+    <HomeView
+      authenticated={authenticated}
+      passwordSet={settings.passwordSet}
+      siteDescription={settings.siteDescription}
+      streaks={streaks}
+    />
   );
 }

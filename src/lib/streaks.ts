@@ -11,6 +11,7 @@ export type StreakRow = {
   longest_start_date: string | null;
   longest_end_date: string | null;
   timezone: string;
+  description: string;
 };
 
 // IANA zone names double as "closest city" labels (America/Chicago,
@@ -55,6 +56,7 @@ function defaultRow(slug: string): StreakRow {
     longest_start_date: null,
     longest_end_date: null,
     timezone: DEFAULT_TIMEZONE,
+    description: "",
   };
 }
 
@@ -108,6 +110,7 @@ export async function resolveStreak(slug: string): Promise<ResolvedStreak> {
 }
 
 export type StreakDisplay = {
+  slug: string;
   count: number;
   longest: number;
   nextMilestone: number;
@@ -115,6 +118,7 @@ export type StreakDisplay = {
   longestEndDate: string | null;
   longestOngoing: boolean;
   timezone: string;
+  description: string;
 };
 
 // While the current run is tied with (or has just extended) the record, the
@@ -122,6 +126,7 @@ export type StreakDisplay = {
 function toDisplay(data: StreakRow, today: string): StreakDisplay {
   const longestOngoing = data.longest > 0 && data.count === data.longest;
   return {
+    slug: data.slug,
     count: data.count,
     longest: data.longest,
     nextMilestone: nextMilestone(data.count),
@@ -129,6 +134,7 @@ function toDisplay(data: StreakRow, today: string): StreakDisplay {
     longestEndDate: longestOngoing ? today : data.longest_end_date,
     longestOngoing,
     timezone: data.timezone,
+    description: data.description,
   };
 }
 
@@ -137,6 +143,17 @@ export async function getStreakDisplay(
 ): Promise<StreakDisplay & { checkedInToday: boolean }> {
   const { data, today, checkedInToday } = await resolveStreak(slug);
   return { ...toDisplay(data, today), checkedInToday };
+}
+
+// Lists every dstreak that has been created (i.e. has a row in the DB).
+// Runs each through the same reset/resolution logic as a real visit, so the
+// home page table's numbers agree with what visiting the page directly
+// would show. N+1 queries is fine at personal-tool scale.
+export async function listAllStreaks(): Promise<Array<StreakDisplay & { checkedInToday: boolean }>> {
+  const supabase = getSupabaseAdmin();
+  const { data } = await supabase.from("streaks").select("slug").order("slug", { ascending: true });
+  const slugs = (data ?? []).map((row) => row.slug as string);
+  return Promise.all(slugs.map((slug) => getStreakDisplay(slug)));
 }
 
 export async function checkIn(slug: string): Promise<StreakDisplay> {
@@ -179,6 +196,16 @@ export async function setTimezone(
   // Re-resolve: the new timezone can shift what "today" is enough to trigger
   // (or avoid) a missed-day reset, or change whether today is already
   // checked in, so recompute from scratch rather than patching in memory.
+  const { data: resolved, today, checkedInToday } = await resolveStreak(slug);
+  return { ...toDisplay(resolved, today), checkedInToday };
+}
+
+export async function setDescription(
+  slug: string,
+  description: string
+): Promise<StreakDisplay & { checkedInToday: boolean }> {
+  const data = await loadStreak(slug);
+  await saveStreak({ ...data, description });
   const { data: resolved, today, checkedInToday } = await resolveStreak(slug);
   return { ...toDisplay(resolved, today), checkedInToday };
 }
